@@ -1,7 +1,11 @@
 const config = {
-    apiUrl: process.env.API_URL || 'http://localhost:3000',
-    environment: process.env.NODE_ENV || 'development',
-    isAdmin: true
+    apiUrl: 'https://backend-repository-o6ai.onrender.com', // Will be updated after backend deployment
+    environment: 'production',
+    endpoints: {
+        login: '/api/admin/login',
+        dashboard: '/api/admin/dashboard',
+        movies: '/api/movies'
+    }
 };
 
 if (config.environment === 'production') {
