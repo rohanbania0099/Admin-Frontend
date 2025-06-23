@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CinemaBuzz Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* Base Colors */
+            --primary: #0a0c10;
+            --secondary: #161b22;
+            --accent: #238636;
+            --accent-hover: #2ea043;
+            --text: #e6edf3;
+            --text-secondary: #8b949e;
+            --highlight: #1f6feb;
+            --card-bg: #0d1117;
+            --admin-bg: rgba(13, 17, 23, 0.98);
+            --border: #30363d;
+            --success: #238636;
+            --error: #f85149;
+            --warning: #d29922;
+            
+            /* Gradients */
+            --gradient-primary: linear-gradient(180deg, var(--secondary) 0%, var(--primary) 100%);
+            --gradient-accent: linear-gradient(180deg, var(--accent) 0%, #1a6329 100%);
+            --gradient-highlight: linear-gradient(180deg, var(--highlight) 0%, #1652b3 100%);
+            
+            /* Shadows */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
+            
+            /* Transitions */
+            --transition-fast: 0.2s ease;
+            --transition-normal: 0.3s ease;
+            --transition-slow: 0.5s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background-color: var(--primary);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            font-size: 16px;
+            background-image: radial-gradient(circle at 50% 0%, var(--secondary) 0%, var(--primary) 100%);
+            background-attachment: fixed;
+        }
+
+        /* Header */
+        .header {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text);
+        }
+
+        .logo i {
+            font-size: 1.8rem;
+            color: var(--accent);
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* Main Content */
+        .main {
+            margin-top: 80px;
+            padding: 40px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-md);
+            transition: transform var(--transition-fast);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient-accent);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card h3 {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-card h3 i {
+            color: var(--accent);
+            font-size: 1.3rem;
+        }
+
+        .stat-card p {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .stat-trend {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .trend-up {
+            color: var(--success);
+        }
+
+        .trend-down {
+            color: var(--error);
+        }
+
+        /* Movies Table */
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            margin-top: 40px;
+        }
+
+        .table-header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .movies-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .movies-table th,
+        .movies-table td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .movies-table th {
+            background: var(--secondary);
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .movies-table tr:hover {
+            background: var(--secondary);
+        }
+
+        .movies-table td {
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all var(--transition-fast);
+        }
+
+        .btn-primary {
+            background: var(--gradient-accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .action-btn {
+            padding: 6px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            color: var(--text);
+            background: transparent;
+        }
+
+        .action-btn:hover {
+            background: var(--border);
+        }
+
+        .action-btn i {
+            font-size: 1.1rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color var(--transition-fast);
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group input[type="url"] {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 0.95rem;
+            transition: all var(--transition-fast);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(35, 134, 54, 0.2);
+        }
+
+        /* Genre Selection */
+        .genre-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .genre-option {
+            position: relative;
+        }
+
+        .genre-option input[type="checkbox"] {
+            display: none;
+        }
+
+        .genre-option label {
+            display: block;
+            padding: 8px 12px;
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-align: center;
+            transition: all var(--transition-fast);
+        }
+
+        .genre-option input[type="checkbox"]:checked + label {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .genre-option label:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+            }
+
+            .main {
+                padding: 20px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+
+            .movies-table {
+                min-width: 800px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo h1 {
+                display: none;
+            }
+
+            .header-actions {
+                gap: 10px;
+            }
+
+            .btn {
+                padding: 8px 16px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <a href="index.html" class="logo">
+            <i class="fas fa-film"></i>
+            <h1>CinemaBuzz Admin</h1>
+        </a>
+        <div class="header-actions">
+            <button class="btn btn-primary" id="addMovieBtn">
+                <i class="fas fa-plus"></i>
+                Add Movie
+            </button>
+            <button class="btn btn-danger" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+            </button>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>
+                    <i class="fas fa-film"></i>
+                    Total Movies
+                </h3>
+                <p id="totalMovies">0</p>
+                <div class="stat-trend">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>5% from last month</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3>
+                    <i class="fas fa-star"></i>
+                    Featured Movies
+                </h3>
+                <p id="featuredMovies">0</p>
+                <div class="stat-trend">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>12% from last month</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3>
+                    <i class="fas fa-thumbtack"></i>
+                    Pinned Movies
+                </h3>
+                <p id="pinnedMovies">0</p>
+                <div class="stat-trend">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>3% from last month</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h2 class="table-title">Movies List</h2>
+            </div>
+            <table class="movies-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Year</th>
+                        <th>Rating</th>
+                        <th>Genres</th>
+                        <th>Featured</th>
+                        <th>Pinned</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="moviesList">
+                    <!-- Movies will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Add/Edit Movie Modal -->
+    <div id="movieModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Add New Movie</h2>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="movieForm">
+                    <input type="hidden" id="movieId">
+                    <div class="form-group">
+                        <label for="movieTitle">Title</label>
+                        <input type="text" id="movieTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="movieYear">Year</label>
+                        <input type="number" id="movieYear" min="1900" max="2099" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="movieRating">Rating (0-10)</label>
+                        <input type="number" id="movieRating" min="0" max="10" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Genres</label>
+                        <div class="genre-grid">
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreAction" value="Action">
+                                <label for="genreAction">Action</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreAdventure" value="Adventure">
+                                <label for="genreAdventure">Adventure</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreAnimation" value="Animation">
+                                <label for="genreAnimation">Animation</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreBiography" value="Biography">
+                                <label for="genreBiography">Biography</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreComedy" value="Comedy">
+                                <label for="genreComedy">Comedy</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreCrime" value="Crime">
+                                <label for="genreCrime">Crime</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreDocumentary" value="Documentary">
+                                <label for="genreDocumentary">Documentary</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreDrama" value="Drama">
+                                <label for="genreDrama">Drama</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreFamily" value="Family">
+                                <label for="genreFamily">Family</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreFantasy" value="Fantasy">
+                                <label for="genreFantasy">Fantasy</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreHorror" value="Horror">
+                                <label for="genreHorror">Horror</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreMystery" value="Mystery">
+                                <label for="genreMystery">Mystery</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreRomance" value="Romance">
+                                <label for="genreRomance">Romance</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreSciFi" value="Sci-Fi">
+                                <label for="genreSciFi">Sci-Fi</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreThriller" value="Thriller">
+                                <label for="genreThriller">Thriller</label>
+                            </div>
+                            <div class="genre-option">
+                                <input type="checkbox" id="genreWar" value="War">
+                                <label for="genreWar">War</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="moviePoster">Poster URL</label>
+                        <input type="url" id="moviePoster" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="movieWatch">Watch URL</label>
+                        <input type="url" id="movieWatch" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="movieDownload">Download URL</label>
+                        <input type="url" id="movieDownload" required>
+                    </div>
+                    <div class="form-group">
+                        <div class="genre-option">
+                            <input type="checkbox" id="movieFeatured">
+                            <label for="movieFeatured">Featured Movie</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="genre-option">
+                            <input type="checkbox" id="moviePinned">
+                            <label for="moviePinned">Pin to Top</label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Save Movie
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API endpoints
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000/api'
+            : '/api';
+
+        // Check authentication
+        if (!localStorage.getItem('isAdminLoggedIn')) {
+            window.location.href = 'admin.html';
+        }
+
+        // DOM Elements
+        const moviesList = document.getElementById('moviesList');
+        const addMovieBtn = document.getElementById('addMovieBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const movieModal = document.getElementById('movieModal');
+        const closeModal = document.getElementById('closeModal');
+        const movieForm = document.getElementById('movieForm');
+        const modalTitle = document.getElementById('modalTitle');
+
+        // Load Dashboard Data
+        async function loadDashboardData() {
+            try {
+                const response = await fetch(`${API_URL}/movies`);
+                const data = await response.json();
+                
+                // Update stats
+                document.getElementById('totalMovies').textContent = data.movies.length;
+                document.getElementById('featuredMovies').textContent = 
+                    data.movies.filter(movie => movie.featured).length;
+                document.getElementById('pinnedMovies').textContent = 
+                    data.movies.filter(movie => movie.pinned).length;
+
+                // Render movies table
+                renderMoviesTable(data.movies);
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                alert('Failed to load dashboard data');
+            }
+        }
+
+        // Render Movies Table
+        function renderMoviesTable(movies) {
+            moviesList.innerHTML = movies.map(movie => `
+                <tr>
+                    <td>${movie.title}</td>
+                    <td>${movie.year}</td>
+                    <td>${movie.rating}</td>
+                    <td>${movie.genres.join(', ')}</td>
+                    <td>${movie.featured ? '✓' : '✗'}</td>
+                    <td>${movie.pinned ? '✓' : '✗'}</td>
+                    <td class="actions">
+                        <button class="action-btn" onclick="editMovie('${movie._id}')" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn" onclick="deleteMovie('${movie._id}')" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Add Movie Handler
+        addMovieBtn.addEventListener('click', () => {
+            modalTitle.textContent = 'Add New Movie';
+            movieForm.reset();
+            document.getElementById('movieId').value = '';
+            movieModal.style.display = 'flex';
+        });
+
+        // Close Modal Handler
+        closeModal.addEventListener('click', () => {
+            movieModal.style.display = 'none';
+        });
+
+        // Movie Form Handler
+        movieForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Get selected genres
+            const selectedGenres = Array.from(document.querySelectorAll('.genre-grid input[type="checkbox"]:checked'))
+                .map(checkbox => checkbox.value);
+
+            if (selectedGenres.length === 0) {
+                alert('Please select at least one genre');
+                return;
+            }
+
+            const movieData = {
+                title: document.getElementById('movieTitle').value,
+                year: parseInt(document.getElementById('movieYear').value),
+                rating: parseFloat(document.getElementById('movieRating').value),
+                genres: selectedGenres,
+                poster: document.getElementById('moviePoster').value,
+                watchUrl: document.getElementById('movieWatch').value,
+                downloadUrl: document.getElementById('movieDownload').value,
+                featured: document.getElementById('movieFeatured').checked,
+                pinned: document.getElementById('moviePinned').checked
+            };
+
+            const movieId = document.getElementById('movieId').value;
+            try {
+                const url = movieId 
+                    ? `${API_URL}/movies/${movieId}`
+                    : `${API_URL}/movies`;
+                
+                const response = await fetch(url, {
+                    method: movieId ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(movieData)
+                });
+
+                if (!response.ok) throw new Error('Failed to save movie');
+
+                movieModal.style.display = 'none';
+                loadDashboardData();
+                alert('Movie saved successfully!');
+            } catch (error) {
+                console.error('Error saving movie:', error);
+                alert('Failed to save movie');
+            }
+        });
+
+        // Edit Movie Function
+        async function editMovie(movieId) {
+            try {
+                const response = await fetch(`${API_URL}/movies/${movieId}`);
+                const movie = await response.json();
+
+                document.getElementById('movieId').value = movie._id;
+                document.getElementById('movieTitle').value = movie.title;
+                document.getElementById('movieYear').value = movie.year;
+                document.getElementById('movieRating').value = movie.rating;
+                document.getElementById('moviePoster').value = movie.poster;
+                document.getElementById('movieWatch').value = movie.watchUrl;
+                document.getElementById('movieDownload').value = movie.downloadUrl;
+                document.getElementById('movieFeatured').checked = movie.featured;
+                document.getElementById('moviePinned').checked = movie.pinned;
+
+                // Reset all genre checkboxes
+                document.querySelectorAll('.genre-grid input[type="checkbox"]')
+                    .forEach(checkbox => checkbox.checked = false);
+
+                // Check selected genres
+                movie.genres.forEach(genre => {
+                    const checkbox = document.getElementById(`genre${genre.replace(/[^a-zA-Z0-9]/g, '')}`);
+                    if (checkbox) checkbox.checked = true;
+                });
+
+                modalTitle.textContent = 'Edit Movie';
+                movieModal.style.display = 'flex';
+            } catch (error) {
+                console.error('Error loading movie:', error);
+                alert('Failed to load movie data');
+            }
+        }
+
+        // Delete Movie Function
+        async function deleteMovie(movieId) {
+            if (!confirm('Are you sure you want to delete this movie?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/movies/${movieId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Failed to delete movie');
+
+                loadDashboardData();
+                alert('Movie deleted successfully!');
+            } catch (error) {
+                console.error('Error deleting movie:', error);
+                alert('Failed to delete movie');
+            }
+        }
+
+        // Logout Handler
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('isAdminLoggedIn');
+            window.location.href = 'admin.html';
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === movieModal) {
+                movieModal.style.display = 'none';
+            }
+        });
+
+        // Initial load
+        loadDashboardData();
+    </script>
+</body>
+</html> 
