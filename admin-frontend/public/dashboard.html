@@ -662,200 +662,139 @@
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script>
-        // API endpoints
-        const API_URL = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3000/api'
-            : '/api';
-
         // Check authentication
-        if (!localStorage.getItem('isAdminLoggedIn')) {
+        if (!localStorage.getItem('adminToken')) {
             window.location.href = 'admin.html';
         }
 
-        // DOM Elements
-        const moviesList = document.getElementById('moviesList');
-        const addMovieBtn = document.getElementById('addMovieBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const movieModal = document.getElementById('movieModal');
-        const closeModal = document.getElementById('closeModal');
-        const movieForm = document.getElementById('movieForm');
-        const modalTitle = document.getElementById('modalTitle');
+        // API helper function
+        async function fetchWithAuth(endpoint, options = {}) {
+            const token = localStorage.getItem('adminToken');
+            const defaultOptions = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            try {
+                const response = await fetch(`${window.APP_CONFIG.apiUrl}${endpoint}`, {
+                    ...defaultOptions,
+                    ...options,
+                    headers: {
+                        ...defaultOptions.headers,
+                        ...(options.headers || {})
+                    }
+                });
 
-        // Load Dashboard Data
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'API request failed');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        // Load dashboard data
         async function loadDashboardData() {
             try {
-                const response = await fetch(`${API_URL}/movies`);
-                const data = await response.json();
+                const data = await fetchWithAuth('/api/admin/dashboard');
                 
                 // Update stats
-                document.getElementById('totalMovies').textContent = data.movies.length;
-                document.getElementById('featuredMovies').textContent = 
-                    data.movies.filter(movie => movie.featured).length;
-                document.getElementById('pinnedMovies').textContent = 
-                    data.movies.filter(movie => movie.pinned).length;
+                document.getElementById('totalMovies').textContent = data.stats.totalMovies;
+                document.getElementById('activeMovies').textContent = data.stats.activeMovies;
+                document.getElementById('featuredMovies').textContent = data.stats.featuredMovies;
+                document.getElementById('pinnedMovies').textContent = data.stats.pinnedMovies;
 
-                // Render movies table
-                renderMoviesTable(data.movies);
+                // Update recent movies table
+                const tableBody = document.querySelector('tbody');
+                tableBody.innerHTML = data.recentMovies.map(movie => `
+                    <tr>
+                        <td>${movie.title}</td>
+                        <td>${movie.year}</td>
+                        <td>${movie.genres.join(', ')}</td>
+                        <td>${movie.rating}</td>
+                        <td>${new Date(movie.createdAt).toLocaleDateString()}</td>
+                        <td>
+                            <button onclick="editMovie('${movie._id}')" class="btn-icon edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteMovie('${movie._id}')" class="btn-icon delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
             } catch (error) {
-                console.error('Error loading dashboard:', error);
-                alert('Failed to load dashboard data');
+                showError('Failed to load dashboard data: ' + error.message);
             }
         }
 
-        // Render Movies Table
-        function renderMoviesTable(movies) {
-            moviesList.innerHTML = movies.map(movie => `
-                <tr>
-                    <td>${movie.title}</td>
-                    <td>${movie.year}</td>
-                    <td>${movie.rating}</td>
-                    <td>${movie.genres.join(', ')}</td>
-                    <td>${movie.featured ? '✓' : '✗'}</td>
-                    <td>${movie.pinned ? '✓' : '✗'}</td>
-                    <td class="actions">
-                        <button class="action-btn" onclick="editMovie('${movie._id}')" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-btn" onclick="deleteMovie('${movie._id}')" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        // Add Movie Handler
-        addMovieBtn.addEventListener('click', () => {
-            modalTitle.textContent = 'Add New Movie';
-            movieForm.reset();
-            document.getElementById('movieId').value = '';
-            movieModal.style.display = 'flex';
-        });
-
-        // Close Modal Handler
-        closeModal.addEventListener('click', () => {
-            movieModal.style.display = 'none';
-        });
-
-        // Movie Form Handler
-        movieForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            // Get selected genres
-            const selectedGenres = Array.from(document.querySelectorAll('.genre-grid input[type="checkbox"]:checked'))
-                .map(checkbox => checkbox.value);
-
-            if (selectedGenres.length === 0) {
-                alert('Please select at least one genre');
-                return;
-            }
-
-            const movieData = {
-                title: document.getElementById('movieTitle').value,
-                year: parseInt(document.getElementById('movieYear').value),
-                rating: parseFloat(document.getElementById('movieRating').value),
-                genres: selectedGenres,
-                poster: document.getElementById('moviePoster').value,
-                watchUrl: document.getElementById('movieWatch').value,
-                downloadUrl: document.getElementById('movieDownload').value,
-                featured: document.getElementById('movieFeatured').checked,
-                pinned: document.getElementById('moviePinned').checked
-            };
-
-            const movieId = document.getElementById('movieId').value;
+        // Add movie function
+        async function addMovie(movieData) {
             try {
-                const url = movieId 
-                    ? `${API_URL}/movies/${movieId}`
-                    : `${API_URL}/movies`;
-                
-                const response = await fetch(url, {
-                    method: movieId ? 'PUT' : 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                const response = await fetchWithAuth('/api/movies', {
+                    method: 'POST',
                     body: JSON.stringify(movieData)
                 });
-
-                if (!response.ok) throw new Error('Failed to save movie');
-
-                movieModal.style.display = 'none';
-                loadDashboardData();
-                alert('Movie saved successfully!');
+                
+                showSuccess('Movie added successfully');
+                loadDashboardData(); // Refresh the dashboard
+                return response;
             } catch (error) {
-                console.error('Error saving movie:', error);
-                alert('Failed to save movie');
-            }
-        });
-
-        // Edit Movie Function
-        async function editMovie(movieId) {
-            try {
-                const response = await fetch(`${API_URL}/movies/${movieId}`);
-                const movie = await response.json();
-
-                document.getElementById('movieId').value = movie._id;
-                document.getElementById('movieTitle').value = movie.title;
-                document.getElementById('movieYear').value = movie.year;
-                document.getElementById('movieRating').value = movie.rating;
-                document.getElementById('moviePoster').value = movie.poster;
-                document.getElementById('movieWatch').value = movie.watchUrl;
-                document.getElementById('movieDownload').value = movie.downloadUrl;
-                document.getElementById('movieFeatured').checked = movie.featured;
-                document.getElementById('moviePinned').checked = movie.pinned;
-
-                // Reset all genre checkboxes
-                document.querySelectorAll('.genre-grid input[type="checkbox"]')
-                    .forEach(checkbox => checkbox.checked = false);
-
-                // Check selected genres
-                movie.genres.forEach(genre => {
-                    const checkbox = document.getElementById(`genre${genre.replace(/[^a-zA-Z0-9]/g, '')}`);
-                    if (checkbox) checkbox.checked = true;
-                });
-
-                modalTitle.textContent = 'Edit Movie';
-                movieModal.style.display = 'flex';
-            } catch (error) {
-                console.error('Error loading movie:', error);
-                alert('Failed to load movie data');
+                showError('Failed to add movie: ' + error.message);
+                throw error;
             }
         }
 
-        // Delete Movie Function
+        // Delete movie function
         async function deleteMovie(movieId) {
             if (!confirm('Are you sure you want to delete this movie?')) return;
-
+            
             try {
-                const response = await fetch(`${API_URL}/movies/${movieId}`, {
+                await fetchWithAuth(`/api/movies/${movieId}`, {
                     method: 'DELETE'
                 });
-
-                if (!response.ok) throw new Error('Failed to delete movie');
-
-                loadDashboardData();
-                alert('Movie deleted successfully!');
+                
+                showSuccess('Movie deleted successfully');
+                loadDashboardData(); // Refresh the dashboard
             } catch (error) {
-                console.error('Error deleting movie:', error);
-                alert('Failed to delete movie');
+                showError('Failed to delete movie: ' + error.message);
             }
         }
 
-        // Logout Handler
-        logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('isAdminLoggedIn');
-            window.location.href = 'admin.html';
-        });
+        // Edit movie function
+        async function editMovie(movieId) {
+            // Implementation for edit functionality
+            console.log('Edit movie:', movieId);
+        }
 
-        // Close modal when clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target === movieModal) {
-                movieModal.style.display = 'none';
-            }
-        });
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
 
-        // Initial load
-        loadDashboardData();
+        // Show success message
+        function showSuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.textContent = message;
+            document.body.appendChild(successDiv);
+            setTimeout(() => successDiv.remove(), 3000);
+        }
+
+        // Load dashboard data when page loads
+        document.addEventListener('DOMContentLoaded', loadDashboardData);
     </script>
 </body>
 </html> 

@@ -296,18 +296,13 @@
         <div id="message" class="message"></div>
     </div>
 
+    <script src="config.js"></script>
     <script>
         const loginForm = document.getElementById('loginForm');
         const message = document.getElementById('message');
         const spinner = document.querySelector('.spinner');
         const loginBtn = document.querySelector('.btn-primary span');
         const loginIcon = document.querySelector('.btn-primary i');
-
-        // Admin credentials (in a real app, this would be handled server-side)
-        const ADMIN_CREDENTIALS = {
-            username: 'admin',
-            password: '77861822'
-        };
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -321,18 +316,28 @@
             loginIcon.style.display = 'none';
 
             try {
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                const response = await fetch(`${window.APP_CONFIG.apiUrl}/api/admin/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
 
-                if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-                    showMessage('Login successful! Redirecting...', 'success');
-                    localStorage.setItem('isAdminLoggedIn', 'true');
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 1500);
-                } else {
-                    throw new Error('Invalid username or password');
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Login failed');
                 }
+
+                // Store the token
+                localStorage.setItem('adminToken', data.token);
+                localStorage.setItem('isAdminLoggedIn', 'true');
+                
+                showMessage('Login successful! Redirecting...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1500);
             } catch (error) {
                 showMessage(error.message, 'error');
                 // Reset loading state
